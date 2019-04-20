@@ -1993,6 +1993,40 @@ const converters = {
             };
         },
     },
+    tint404011_brightness_updown_hold: {
+        cid: 'genLevelCtrl',
+        type: 'cmdMove',
+        convert: (model, msg, publish, options) => {
+            const deviceID = msg.endpoints[0].device.ieeeAddr;
+            const direction = msg.data.data.movemode === 1 ? 'down' : 'up';
+
+            // Save last direction for release event
+            if (!store[deviceID]) {
+                store[deviceID] = {};
+            }
+            store[deviceID].movemode = direction;
+
+            return {
+                action: `brightness_${direction}_hold`,
+                rate: msg.data.data.rate,
+            };
+        },
+    },
+    tint404011_brightness_updown_release: {
+        cid: 'genLevelCtrl',
+        type: 'cmdStop',
+        convert: (model, msg, publish, options) => {
+            const deviceID = msg.endpoints[0].device.ieeeAddr;
+            if (!store[deviceID]) {
+                return null;
+            }
+
+            const direction = store[deviceID].movemode;
+            return {
+                action: `brightness_${direction}_release`,
+            };
+        },
+    },
     tint404011_scene: {
         cid: 'genBasic',
         type: 'cmdWrite',
@@ -2195,6 +2229,24 @@ const converters = {
             const position = Math.round(Number(currentLevel) / 2.55).toString();
             const state = position > 0 ? 'OPEN' : 'CLOSE';
             return {state: state, position: position};
+        },
+    },
+    cover_state_report: {
+        cid: 'genOnOff',
+        type: 'attReport',
+        convert: (model, msg, publish, options) => {
+            if (msg.data.data.hasOwnProperty('onOff')) {
+                return {state: msg.data.data['onOff'] === 1 ? 'OPEN' : 'CLOSE'};
+            }
+        },
+    },
+    cover_state_change: {
+        cid: 'genOnOff',
+        type: 'devChange',
+        convert: (model, msg, publish, options) => {
+            if (msg.data.data.hasOwnProperty('onOff')) {
+                return {state: msg.data.data['onOff'] === 1 ? 'OPEN' : 'CLOSE'};
+            }
         },
     },
     keen_home_smart_vent_pressure: {
@@ -2523,8 +2575,13 @@ const converters = {
         type: 'devChange',
         convert: (model, msg, publish, options) => null,
     },
-    ignore_genscenes_change: {
+    ignore_genScenes_change: {
         cid: 'genScenes',
+        type: 'devChange',
+        convert: (model, msg, publish, options) => null,
+    },
+    ignore_lightLink_change: {
+        cid: 'lightLink',
         type: 'devChange',
         convert: (model, msg, publish, options) => null,
     },
