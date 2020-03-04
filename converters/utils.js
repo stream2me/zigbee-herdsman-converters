@@ -1,4 +1,7 @@
 'use strict';
+
+const kelvinToXyLookup = require('./lookup/kelvinToXy');
+
 /**
  * From: https://github.com/usolved/cie-rgb-converter/blob/master/cie_rgb_converter.js
  * Converts RGB color space to CIE color space
@@ -43,6 +46,35 @@ function hexToXY(hex) {
     return rgbToXY(rgb.r, rgb.g, rgb.b);
 }
 
+function miredsToKelvin(mireds) {
+    return 1000000 / mireds;
+}
+
+function miredsToXY(mireds) {
+    const kelvin = miredsToKelvin(mireds);
+    return kelvinToXyLookup[Math.round(kelvin)];
+}
+
+function kelvinToMireds(kelvin) {
+    return 1000000 / kelvin;
+}
+
+function xyToMireds(x, y) {
+    const n = (x-0.3320)/(0.1858-y);
+    const kelvin = 437*n^3 + 3601*n^2 + 6861*n + 5517;
+    return Math.round(kelvinToMireds(Math.abs(kelvin)));
+}
+
+function hslToHsb(h, s, l) {
+    h = h % 360;
+    s = s / 100;
+    l = l / 100;
+    const retH = h;
+    const retB = s * Math.min(l, 1-l) + l;
+    const retS = retB ? 2-2*l/retB : 0;
+    return {h: retH, s: retS, b: retB};
+}
+
 function hexToRgb(hex) {
     hex = hex.replace('#', '');
     const bigint = parseInt(hex, 16);
@@ -58,9 +90,23 @@ function getKeyByValue(object, value, fallback) {
     return key != null ? Number(key) : (fallback || 0);
 }
 
+function hasEndpoints(device, endpoints) {
+    const eps = device.endpoints.map((e) => e.ID);
+    for (const endpoint of endpoints) {
+        if (!eps.includes(endpoint)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 module.exports = {
-    rgbToXY: rgbToXY,
-    hexToXY: hexToXY,
-    hexToRgb: hexToRgb,
-    getKeyByValue: getKeyByValue,
+    rgbToXY,
+    hexToXY,
+    hexToRgb,
+    hslToHsb,
+    getKeyByValue,
+    hasEndpoints,
+    miredsToXY,
+    xyToMireds,
 };
